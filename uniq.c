@@ -3,44 +3,49 @@
 #include "user.h"
 #include "fs.h"
 
-typedef enum {true, false} bool;
+/*
+  How would you do this in node?
+    read the file.
+    split at the new lines.
+    set the first sentence to base.
+    compare the second sentence. 
+    move on. 
+*/
+
+typedef enum
+{
+  true,
+  false
+} bool;
+
+void cacheWord(int *wordIdx, char buf[], char wordCache[])
+{
+  int cacheIdx = 0;
+  char value;
+  while ((value = buf[*wordIdx]))
+  {
+    *wordIdx += 1;
+    if (value == '\n')
+    {
+      wordCache[cacheIdx] = '\0';
+      return;
+    }
+    wordCache[cacheIdx++] = value;
+  }
+}
 
 int main(int argc, char *argv[])
 {
-  printf(1, "Stub for uniq fn\n");
-  printf(2, "argc %d\n", argc);
-  char* fileName = argv[1];
-  printf(1, "fileName: %s\n", fileName);
+  char *fileName = argv[1];
   int fd = open(fileName, 0);
-  printf(1, "fd: %d\n", fd);
   struct stat statBuf;
   int status = fstat(fd, &statBuf);
-  printf(1, "Status: %d\n", status);
-  int fileSize = statBuf.size;
-  char buf[statBuf.size];
-  int n = read(fd, buf, sizeof(buf));
-  printf(1, "n: %d\n", n);
+  int fileSize = statBuf.size + 1;
+  char fileString[fileSize];
+  read(fd, fileString, fileSize);
   char wordCache[fileSize];
   int wordIndex = 0;
-  int wordCount = 1;
-  bool newWord = false;
-  // we need to read a line. check if it mataches the previous line. 
-  for (int i = 0; i < n; i++) {
-    char currentChar = buf[i];
-    if (currentChar == '\n') {
-      // do we have a new word?
-      continue;
-    } if (currentChar == wordCache[wordIndex++]) {
-
-    }
-  }
-  printf(1, "\n");
+  cacheWord(&wordIndex, fileString, wordCache);
+  cacheWord(&wordIndex, fileString, wordCache);
   exit();
 }
-
-/*
-  Read line
-  compare to last line
-  update unique count. 
-  update last word. 
-*/
