@@ -3,25 +3,6 @@
 #include "user.h"
 #include "fs.h"
 
-int loadFirstWord(char *file, char *cache)
-{
-  int fileIdx = 0;
-  while (1)
-  {
-    char value = file[fileIdx];
-    if (value == '\0')
-    {
-      return fileIdx;
-    }
-    *cache = value;
-    cache += 1;
-    fileIdx += 1;
-    *cache = '\0';
-    if (value == '\n')
-      return fileIdx;
-  }
-}
-
 void writeCacheToResults(char *cache, char *results)
 {
   int length = strlen(results);
@@ -36,9 +17,8 @@ void writeCacheToResults(char *cache, char *results)
 void generateUniq(char *file, char *cache, char *results)
 {
   results[0] = '\0';
+  cache[0] = '\0';
   int cacheIdx = 0, uniqCount = 1;
-  int fileIdx = loadFirstWord(file, cache);
-  file = &file[fileIdx];
   while (*file != '\0')
   {
     if (cacheIdx >= strlen(cache) || *file != cache[cacheIdx])
@@ -90,5 +70,6 @@ int main(int argc, char *argv[])
   char results[fileSize];
   char cache[fileSize];
   generateUniq(file, cache, results);
+  printf(1, "%s\n", results);
   exit();
 }
