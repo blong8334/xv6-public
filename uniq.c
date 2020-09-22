@@ -4,14 +4,20 @@
 #include "fs.h"
 
 char buf[12];
+const int baseSize = sizeof(buf);
 /*
-  Create a fn that reads lines.
-  use malloc to write the chunk to a line until you don't have anymore room.
-    if you run out of space with the current line, then create some new, bigger memory, free
-    the old and keep on rocking in the free world.
+  read file.
+  split file.
+  compare lines.
 */
 
-char* allocateMemory(int size){
+struct String {
+  int length;
+  int index;
+  char* source;
+};
+
+char* allocateCharMemory(int size){
   char* line = malloc(size);
   if (line == 0){
     printf(2, "could not allocate memory\n");
@@ -21,34 +27,102 @@ char* allocateMemory(int size){
   return line;
 }
 
-void readFile(int fd){
-  int n, mx = 1;
-  int lineIndex = 0;
-  const int baseSize = sizeof(buf);
-  char* line = allocateMemory(baseSize);
+// char** allocateCharPointerMemory(int size){
+//   char** line = malloc(size);
+//   if (line == 0){
+//     printf(2, "could not allocate memory\n");
+//     exit();
+//   }
+//   line[0] = '\0';
+//   return line;
+// }
+
+char* copyChars(int length, char* source, char* target){
+  for (int j = 0; j < length; j++){
+    target[j] = source[j];
+  }
+  return target;
+}
+
+// char** copyChars(char** source, char** target){
+//   for (int j = 0; source[j]; j++){
+//     target[j] = source[j];
+//     target[j + 1] = '\0';
+//   }
+//   return target;
+// }
+
+// char** copyCharPointers(char** source, char** target){
+//   for (int j = 0; source[j]; j++){
+//     target[j] = source[j];
+//     target[j + 1] = '\0';
+//   }
+//   return target;
+// }
+
+struct String checkSize(struct String str){
+  int length = str.length;
+  int index = str.index;
+  if (index < length){
+    return str;
+  }
+  int newLength = length * 2 + 1;
+  char* newSource;
+  newSource = copyChars(length, str.source, malloc(newLength));
+  struct String newStr;
+  newStr.source = newSource;
+  newStr.length = newLength;
+  newStr.index = index;
+  free(str.source);
+  return newStr;
+}
+
+// char** checkSize(int index, char** source){
+//   int sourceSize = sizeof(source);
+//   if (index < sourceSize / sizeof(source[0])){
+//     return source;
+//   }
+//   char** temp = malloc(sourceSize * 2 + 1);
+//   temp = copyChars(source, temp);
+//   free(source);
+//   return temp;
+// }
+
+// char** split(char* str, char splitTarget){
+//   char* line = allocateCharMemory(baseSize);
+//   char** results = allocateCharPointerMemory(baseSize);
+//   int lineIdx = 0, resultsIdx = 0;
+//   while (*str != '\0'){
+//     if (*str == splitTarget){
+//       results[resultsIdx++] = line;
+//       lineIdx = 0;
+//       if (resultsIdx >= sizeof(results) / sizeof(results[0])){
+//         // we need to make a bigger results array and then copy it over. 
+//       }
+//     }
+//     line[lineIdx++] = *str;
+//     str += 1;
+//   }
+//   return results;
+// }
+
+char* readFile(int fd){
+  int n;
+  struct String string1;
+  string1.source = allocateCharMemory(baseSize);
+  string1.length = baseSize;
+  string1.index = 0;
   while ((n = read(fd, buf, sizeof(buf))) > 0){
     for (int i = 0; i < n; i++){
-      line[lineIndex++] = buf[i];
-      line[lineIndex] = '\0';
-      if (lineIndex > baseSize * mx){
-        mx *= 2;
-        char* newLine = allocateMemory(baseSize * mx + 1);
-        for (int j = 0; line[j]; j++){
-          newLine[j] = line[j];
-          newLine[j + 1] = '\0';
-        }
-        char* toDelete = line;
-        line = newLine;
-        free(toDelete);
-      }
+      string1.source[string1.index++] = buf[i];
+      string1 = checkSize(string1);
     }
   }
   if (n < 0){
-    printf(1, "wc: read error\n");
+    printf(1, "uniq: read error\n");
     exit();
   }
-  printf(1, "line %s\n", line);
-  free(line);
+  return string1.source;
 }
 
 void writeCacheToResults(char* cache, char* results){
@@ -100,8 +174,8 @@ int main(int argc, char* argv[]){
   } else{
     fd = open(argv[1], 0);
   }
-  readFile(fd);
-  // printf(1, "%s\n", results);
+  char* results = readFile(fd);
+  printf(1, "%s\n", results);
   close(fd);
   exit();
 }
