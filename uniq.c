@@ -17,25 +17,45 @@ struct String {
   char* source;
 };
 
+struct StringArray {
+  int length;
+  int index;
+  struct String** strings;
+};
+
 char* allocateCharMemory(int size){
   char* line = malloc(size);
   if (line == 0){
     printf(2, "could not allocate memory\n");
     exit();
   }
-  line[0] = '\0';
   return line;
 }
 
-// char** allocateCharPointerMemory(int size){
-//   char** line = malloc(size);
-//   if (line == 0){
-//     printf(2, "could not allocate memory\n");
-//     exit();
-//   }
-//   line[0] = '\0';
-//   return line;
-// }
+struct String** allocateStringMemory(int size){
+  struct String** strings = malloc(size);
+  if (strings == 0){
+    printf(2, "could not allocate memory\n");
+    exit();
+  }
+  return strings;
+}
+
+struct String createString(int baseSize){
+  struct String string1;
+  string1.source = allocateCharMemory(baseSize);
+  string1.length = baseSize;
+  string1.index = 0;
+  return string1;
+}
+
+struct StringArray createStringArray(int baseSize){
+  struct StringArray stringArray;
+  stringArray.strings = allocateStringMemory(baseSize);
+  stringArray.length = baseSize;
+  stringArray.index = 0;
+  return stringArray;
+}
 
 char* copyChars(int length, char* source, char* target){
   for (int j = 0; j < length; j++){
@@ -44,85 +64,51 @@ char* copyChars(int length, char* source, char* target){
   return target;
 }
 
-// char** copyChars(char** source, char** target){
-//   for (int j = 0; source[j]; j++){
-//     target[j] = source[j];
-//     target[j + 1] = '\0';
-//   }
-//   return target;
-// }
-
-// char** copyCharPointers(char** source, char** target){
-//   for (int j = 0; source[j]; j++){
-//     target[j] = source[j];
-//     target[j + 1] = '\0';
-//   }
-//   return target;
-// }
-
-struct String checkSize(struct String str){
-  int length = str.length;
-  int index = str.index;
+struct String* checkSize(struct String* str){
+  int length = str->length;
+  int index = str->index;
   if (index < length){
     return str;
   }
   int newLength = length * 2 + 1;
-  char* newSource;
-  newSource = copyChars(length, str.source, malloc(newLength));
-  struct String newStr;
-  newStr.source = newSource;
-  newStr.length = newLength;
-  newStr.index = index;
-  free(str.source);
-  return newStr;
+  char* newSource = allocateCharMemory(newLength);
+  newSource = copyChars(length, str->source, newSource);
+  char* oldSource = str->source;
+  str->source = newSource;
+  str->length = newLength;
+  free(oldSource);
+  return str;
 }
 
-// char** checkSize(int index, char** source){
-//   int sourceSize = sizeof(source);
-//   if (index < sourceSize / sizeof(source[0])){
-//     return source;
-//   }
-//   char** temp = malloc(sourceSize * 2 + 1);
-//   temp = copyChars(source, temp);
-//   free(source);
-//   return temp;
-// }
+struct StringArray split(struct String* file, char splitTarget){
+  // struct String string = createString(file->length);
+  // struct String* stringPointer = &string;
 
-// char** split(char* str, char splitTarget){
-//   char* line = allocateCharMemory(baseSize);
-//   char** results = allocateCharPointerMemory(baseSize);
-//   int lineIdx = 0, resultsIdx = 0;
-//   while (*str != '\0'){
-//     if (*str == splitTarget){
-//       results[resultsIdx++] = line;
-//       lineIdx = 0;
-//       if (resultsIdx >= sizeof(results) / sizeof(results[0])){
-//         // we need to make a bigger results array and then copy it over. 
-//       }
-//     }
-//     line[lineIdx++] = *str;
-//     str += 1;
-//   }
-//   return results;
-// }
+  struct StringArray stringArray = createStringArray(12);
+  // struct StringArray* stringArrayPointer = &stringArray;
+  int fileIndex = 0;
+  while (fileIndex < file->index){
+    printf(1, "file char: %c\n", file->source[fileIndex]);
+    fileIndex += 1;
+  }
+  return stringArray;
+}
 
-char* readFile(int fd){
+struct String readFile(int fd){
   int n;
-  struct String string1;
-  string1.source = allocateCharMemory(baseSize);
-  string1.length = baseSize;
-  string1.index = 0;
+  struct String string1 = createString(baseSize);
+  struct String* stringP = &string1;
   while ((n = read(fd, buf, sizeof(buf))) > 0){
     for (int i = 0; i < n; i++){
-      string1.source[string1.index++] = buf[i];
-      string1 = checkSize(string1);
+      stringP->source[stringP->index++] = buf[i];
+      stringP = checkSize(stringP);
     }
   }
   if (n < 0){
     printf(1, "uniq: read error\n");
     exit();
   }
-  return string1.source;
+  return string1;
 }
 
 void writeCacheToResults(char* cache, char* results){
@@ -174,8 +160,9 @@ int main(int argc, char* argv[]){
   } else{
     fd = open(argv[1], 0);
   }
-  char* results = readFile(fd);
-  printf(1, "%s\n", results);
+  struct String string = readFile(fd);
+  split(&string, '\n');
+  // printf(1, "%s\n", results);
   close(fd);
   exit();
 }
