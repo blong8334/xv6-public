@@ -13,7 +13,7 @@ struct StringArray {
   int index;
   struct String** strings;
 };
-char buf[12];
+char buf[512];
 const int baseSize = sizeof(buf);
 struct String baseString;
 
@@ -72,7 +72,7 @@ struct String* cloneString(struct String* string){
 
 struct String** copyStrings(int length, struct String** source, struct String** target){
   for (int j = 0; j < length; j++){
-    target[j] = source[j];
+    *target[j] = *source[j];
   }
   return target;
 }
@@ -111,7 +111,7 @@ struct StringArray* ensureStringArraySize(struct StringArray* str){
 
 struct StringArray split(struct String* file, char splitTarget){
   struct String string = createString(file->length);
-  struct StringArray stringArray = createStringArray(12);
+  struct StringArray stringArray = createStringArray(512);
   struct StringArray* stringArrayPointer = &stringArray;
   int fileIndex = 0;
   while (fileIndex < file->index){
