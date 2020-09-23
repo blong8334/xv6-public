@@ -175,6 +175,9 @@ int getLengthOfInt(int num){
 }
 
 void writeToResults(struct String* results, struct String* word, int lineCount){
+  if (options.duplicates && lineCount <= 1){
+    return;
+  }
   if (results->index) results->source[results->index++] = '\n';
   if (options.count){
     int lineSize = getLengthOfInt(lineCount);
