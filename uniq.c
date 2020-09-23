@@ -15,6 +15,7 @@ struct StringArray {
 };
 char buf[12];
 const int baseSize = sizeof(buf);
+struct String baseString;
 
 char* allocateCharMemory(int size){
   char* line = malloc(size);
@@ -26,7 +27,7 @@ char* allocateCharMemory(int size){
 }
 
 struct String** allocateStringMemory(int size){
-  struct String** strings = malloc(size);
+  struct String** strings = malloc(size * sizeof(&baseString));
   if (strings == 0){
     printf(2, "could not allocate memory\n");
     exit();
