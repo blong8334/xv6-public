@@ -26,7 +26,7 @@ struct Options options;
 char* allocateCharMemory(int size){
   char* line = malloc(size);
   if (line == 0){
-    printf(2, "could not allocate memory\n");
+    printf(1, "could not allocate memory\n");
     exit();
   }
   return line;
@@ -35,7 +35,7 @@ char* allocateCharMemory(int size){
 struct String** allocateStringMemory(int size){
   struct String** strings = malloc(size * sizeof(&baseString));
   if (strings == 0){
-    printf(2, "could not allocate memory\n");
+    printf(1, "could not allocate memory\n");
     exit();
   }
   return strings;
@@ -230,6 +230,10 @@ int main(int argc, char* argv[]){
         else if (arg[j] == 'i') options.ignore = 1;
       }
     } else if (i + 1 == argc) fd = open(argv[i], 0);
+  }
+  if (options.count && options.duplicates){
+    printf(1, "uniq: invalid options\n");
+    exit();
   }
   struct String file = readFile(fd);
   struct StringArray stringArray = split(&file, '\n');
