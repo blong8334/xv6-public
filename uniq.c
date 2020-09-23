@@ -123,6 +123,9 @@ struct StringArray split(struct String* file, char splitTarget){
     stringArray.strings[stringArray.index++] = cloneString(&string);
     stringArrayPointer = ensureStringArraySize(stringArrayPointer);
     string.index = 0;
+    if (fileIndex == file->index && currentChar == splitTarget){
+      stringArray.strings[stringArray.index++] = cloneString(&string);
+    }
   }
   return stringArray;
 }
@@ -144,6 +147,38 @@ struct String readFile(int fd){
   return string1;
 }
 
+int compareStrings(struct String* string1, struct String* string2){
+  int length = string1->index;
+  if (string2->index > length){
+    length = string2->index;
+  }
+  for (int i = 0; i < length; i++){
+    if (string1->source[i] != string2->source[i]) return 0;
+  }
+  return 1;
+}
+
+void writeToResults(struct String* results, struct String* word){
+  if (results->index) results->source[results->index++] = '\n';
+  for (int i = 0; i < word->index; i++){
+    results->source[results->index++] = word->source[i];
+  }
+}
+
+struct String compareLines(struct StringArray* stringArray, int fileLength){
+  struct String results = createString(fileLength);
+  struct String* base = stringArray->strings[0];
+  for (int i = 1; i < stringArray->index; i++){
+    struct String* toCompare = stringArray->strings[i];
+    if (!compareStrings(base, toCompare)){
+      writeToResults(&results, base);
+      base = toCompare;
+    }
+  }
+  writeToResults(&results, base);
+  return results;
+}
+
 int main(int argc, char* argv[]){
   int fd;
   if (argc <= 1){
@@ -151,11 +186,12 @@ int main(int argc, char* argv[]){
   } else{
     fd = open(argv[1], 0);
   }
-  struct String string = readFile(fd);
-  printf(1, "string source %s\n", string.source);
-  struct StringArray stringArray = split(&string, '\n');
-  free(string.source);
-  printf(1, "%s\n", stringArray.strings[0]->source);
+  struct String file = readFile(fd);
+  struct StringArray stringArray = split(&file, '\n');
+  free(file.source);
+  struct String results = compareLines(&stringArray, file.length);
+  for (int i = 0; i < results.index; i++) printf(1, "%c", results.source[i]);
+  printf(1, "\n");
   close(fd);
   exit();
 }
