@@ -3,25 +3,18 @@
 #include "user.h"
 #include "fs.h"
 
-char buf[12];
-const int baseSize = sizeof(buf);
-/*
-  read file.
-  split file.
-  compare lines.
-*/
-
 struct String {
   int length;
   int index;
   char* source;
 };
-
 struct StringArray {
   int length;
   int index;
   struct String** strings;
 };
+char buf[12];
+const int baseSize = sizeof(buf);
 
 char* allocateCharMemory(int size){
   char* line = malloc(size);
@@ -64,7 +57,26 @@ char* copyChars(int length, char* source, char* target){
   return target;
 }
 
-struct String* checkSize(struct String* str){
+struct String* cloneString(struct String* string){
+  struct String* newStringP = malloc(sizeof(string));
+  *newStringP = createString(string->index);
+  newStringP->index = string->index;
+  int i = 0;
+  while (i < newStringP->index){
+    newStringP->source[i] = string->source[i];
+    i++;
+  }
+  return newStringP;
+}
+
+struct String** copyStrings(int length, struct String** source, struct String** target){
+  for (int j = 0; j < length; j++){
+    target[j] = source[j];
+  }
+  return target;
+}
+
+struct String* ensureStringSize(struct String* str){
   int length = str->length;
   int index = str->index;
   if (index < length){
@@ -80,16 +92,36 @@ struct String* checkSize(struct String* str){
   return str;
 }
 
-struct StringArray split(struct String* file, char splitTarget){
-  // struct String string = createString(file->length);
-  // struct String* stringPointer = &string;
+struct StringArray* ensureStringArraySize(struct StringArray* str){
+  int length = str->length;
+  int index = str->index;
+  if (index < length){
+    return str;
+  }
+  int newLength = length * 2 + 1;
+  struct String** newStrings = allocateStringMemory(newLength);
+  newStrings = copyStrings(length, str->strings, newStrings);
+  struct String** oldStrings = str->strings;
+  str->strings = newStrings;
+  str->length = newLength;
+  free(oldStrings);
+  return str;
+}
 
+struct StringArray split(struct String* file, char splitTarget){
+  struct String string = createString(file->length);
   struct StringArray stringArray = createStringArray(12);
-  // struct StringArray* stringArrayPointer = &stringArray;
+  struct StringArray* stringArrayPointer = &stringArray;
   int fileIndex = 0;
   while (fileIndex < file->index){
-    printf(1, "file char: %c\n", file->source[fileIndex]);
-    fileIndex += 1;
+    char currentChar = file->source[fileIndex++];
+    if (currentChar != splitTarget){
+      string.source[string.index++] = currentChar;
+      if (fileIndex != file->index) continue;
+    }
+    stringArray.strings[stringArray.index++] = cloneString(&string);
+    stringArrayPointer = ensureStringArraySize(stringArrayPointer);
+    string.index = 0;
   }
   return stringArray;
 }
@@ -100,8 +132,8 @@ struct String readFile(int fd){
   struct String* stringP = &string1;
   while ((n = read(fd, buf, sizeof(buf))) > 0){
     for (int i = 0; i < n; i++){
-      stringP->source[stringP->index++] = buf[i];
-      stringP = checkSize(stringP);
+      string1.source[string1.index++] = buf[i];
+      stringP = ensureStringSize(stringP);
     }
   }
   if (n < 0){
@@ -109,48 +141,6 @@ struct String readFile(int fd){
     exit();
   }
   return string1;
-}
-
-void writeCacheToResults(char* cache, char* results){
-  int length = strlen(results);
-  while (*cache != '\0'){
-    results[length++] = *cache;
-    results[length] = '\0';
-    cache += 1;
-  }
-}
-
-void generateUniq(char* file, char* cache, char* results){
-  results[0] = '\0';
-  cache[0] = '\0';
-  int cacheIdx = 0, uniqCount = 1;
-  while (*file != '\0'){
-    if (cacheIdx >= strlen(cache) || *file != cache[cacheIdx]){
-      writeCacheToResults(cache, results);
-      while (1){
-        cache[cacheIdx++] = *file;
-        cache[cacheIdx] = '\0';
-        if (*file == '\0'){
-          break;
-        }
-        if (*file == '\n'){ // starting new word
-          uniqCount = 1;
-          file += 1;
-          cacheIdx = 0;
-          break;
-        }
-        file += 1;
-      }
-    } else if (*file == '\n'){
-      uniqCount += 1;
-      file += 1;
-      cacheIdx = 0;
-    } else{
-      cacheIdx += 1;
-      file += 1;
-    }
-  }
-  writeCacheToResults(cache, results);
 }
 
 int main(int argc, char* argv[]){
@@ -161,8 +151,9 @@ int main(int argc, char* argv[]){
     fd = open(argv[1], 0);
   }
   struct String string = readFile(fd);
-  split(&string, '\n');
-  // printf(1, "%s\n", results);
+  printf(1, "string source %s\n", string.source);
+  struct StringArray stringArray = split(&string, '\n');
+  printf(1, "%s\n", stringArray.strings[0]->source);
   close(fd);
   exit();
 }
