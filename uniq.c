@@ -153,6 +153,7 @@ int main(int argc, char* argv[]){
   struct String string = readFile(fd);
   printf(1, "string source %s\n", string.source);
   struct StringArray stringArray = split(&string, '\n');
+  free(string.source);
   printf(1, "%s\n", stringArray.strings[0]->source);
   close(fd);
   exit();
