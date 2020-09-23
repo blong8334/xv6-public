@@ -153,13 +153,20 @@ struct String readFile(int fd){
   return string1;
 }
 
+int ignoreCase(int code){
+  if (options.ignore && code <= 122 && code >= 97) return code - 32;
+  return code;
+}
+
 int compareStrings(struct String* string1, struct String* string2){
   int length = string1->index;
   if (string2->index > length){
     length = string2->index;
   }
   for (int i = 0; i < length; i++){
-    if (string1->source[i] != string2->source[i]) return 0;
+    int code1 = ignoreCase((int)string1->source[i]);
+    int code2 = ignoreCase((int)string2->source[i]);
+    if (code1 != code2) return 0;
   }
   return 1;
 }
@@ -227,7 +234,7 @@ int main(int argc, char* argv[]){
   struct String file = readFile(fd);
   struct StringArray stringArray = split(&file, '\n');
   free(file.source);
-  struct String results = compareLines(&stringArray, file.length);
+  struct String results = compareLines(&stringArray, file.length * 2);
   for (int i = 0; i < results.index; i++) printf(1, "%c", results.source[i]);
   printf(1, "\n");
   close(fd);
