@@ -3,6 +3,11 @@
 #include "user.h"
 #include "fs.h"
 
+struct Options {
+  int count;
+  int duplicates;
+  int ignore;
+};
 struct String {
   int length;
   int index;
@@ -16,6 +21,7 @@ struct StringArray {
 char buf[512];
 const int baseSize = sizeof(buf);
 struct String baseString;
+struct Options options;
 
 char* allocateCharMemory(int size){
   char* line = malloc(size);
@@ -158,8 +164,28 @@ int compareStrings(struct String* string1, struct String* string2){
   return 1;
 }
 
-void writeToResults(struct String* results, struct String* word){
+int getLengthOfInt(int num){
+  int count = 0;
+  while (num > 0){
+    num -= num % 10;
+    num /= 10;
+    count += 1;
+  }
+  return count;
+}
+
+void writeToResults(struct String* results, struct String* word, int lineCount){
   if (results->index) results->source[results->index++] = '\n';
+  if (options.count){
+    int lineSize = getLengthOfInt(lineCount);
+    results->index += lineSize;
+    for (int i = 1; i <= lineSize; i++){
+      int toAdd = lineCount % 10;
+      results->source[results->index - i] = (char)(toAdd + '0');
+      lineCount = (lineCount - toAdd) / 10;
+    }
+    results->source[results->index++] = ' ';
+  }
   for (int i = 0; i < word->index; i++){
     results->source[results->index++] = word->source[i];
   }
@@ -168,23 +194,32 @@ void writeToResults(struct String* results, struct String* word){
 struct String compareLines(struct StringArray* stringArray, int fileLength){
   struct String results = createString(fileLength);
   struct String* base = stringArray->strings[0];
+  int lineCount = 0;
   for (int i = 1; i < stringArray->index; i++){
+    lineCount += 1;
     struct String* toCompare = stringArray->strings[i];
     if (!compareStrings(base, toCompare)){
-      writeToResults(&results, base);
+      writeToResults(&results, base, lineCount);
       base = toCompare;
+      lineCount = 0;
     }
   }
-  writeToResults(&results, base);
+  writeToResults(&results, base, lineCount);
   return results;
 }
 
 int main(int argc, char* argv[]){
-  int fd;
-  if (argc <= 1){
-    fd = 0;
-  } else{
-    fd = open(argv[1], 0);
+  options.count = options.duplicates = options.ignore = 0;
+  int fd = 0;
+  for (int i = 1; i < argc; i++){
+    char* arg = argv[i];
+    if (arg[0] == '-'){
+      for (int j = 1; arg[j]; j++){
+        if (arg[j] == 'c') options.count = 1;
+        else if (arg[j] == 'd') options.duplicates = 1;
+        else if (arg[j] == 'i') options.ignore = 1;
+      }
+    } else if (i + 1 == argc) fd = open(argv[i], 0);
   }
   struct String file = readFile(fd);
   struct StringArray stringArray = split(&file, '\n');
